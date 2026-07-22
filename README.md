@@ -5,8 +5,14 @@
 A small retail-banking monolith: register/login with JWT, open accounts, and move money between
 accounts as a real double-entry transfer, backed by Postgres with Flyway-versioned schema.
 
-Built with **Java 17** and **Spring Boot 3.3**. This is a portfolio MVP, not a bank core system —
-see the honest scope table below for exactly what is and is not implemented.
+Built with **Java 17** and **Spring Boot 3.3**. Portfolio MVP, not a bank core. Scope table below says what is in and what is out.
+
+## Documentation
+
+| Doc | Content |
+|-----|---------|
+| [docs/architecture.md](docs/architecture.md) | C4 context/container, component view, packaging |
+| [docs/uml.md](docs/uml.md) | Transfer sequences, class diagram, ER (Flyway V1) |
 
 ## Scope (honest)
 
@@ -30,6 +36,8 @@ see the honest scope table below for exactly what is and is not implemented.
 
 ## Architecture
 
+Quick request path (full C4 + UML in [docs/](docs/)):
+
 ```mermaid
 flowchart LR
     Client -->|JWT| Auth["AuthController /api/auth"]
@@ -44,6 +52,22 @@ flowchart LR
     TrfSvc -->|SELECT ... FOR UPDATE, lowest id first| Accounts
     TrfSvc --> Transfers[("transfers")]
     TrfSvc --> Ledger[("ledger_entries")]
+```
+
+Transfer happy path:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant API as TransferController
+    participant Svc as TransferService
+    participant DB as PostgreSQL
+    User->>API: POST /api/transfers + Idempotency-Key
+    API->>Svc: transfer(...)
+    Svc->>DB: lock accounts FOR UPDATE
+    Svc->>DB: debit/credit + transfer + 2 ledger rows
+    Svc-->>API: TransferResponse
+    API-->>User: 201 Created
 ```
 
 ## Domain rules enforced
