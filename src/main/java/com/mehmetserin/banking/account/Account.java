@@ -8,7 +8,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -25,7 +24,6 @@ import java.util.UUID;
 public class Account {
 
     @Id
-    @UuidGenerator
     private UUID id;
 
     @Column(name = "owner_id", nullable = false)

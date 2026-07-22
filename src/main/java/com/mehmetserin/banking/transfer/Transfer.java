@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,7 +14,6 @@ import java.util.UUID;
 public class Transfer {
 
     @Id
-    @UuidGenerator
     private UUID id;
 
     @Column(name = "idempotency_key", nullable = false, length = 100)

@@ -6,7 +6,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -17,7 +16,6 @@ import java.util.UUID;
 public class LedgerEntry {
 
     @Id
-    @UuidGenerator
     private UUID id;
 
     @Column(name = "transfer_id", nullable = false)
