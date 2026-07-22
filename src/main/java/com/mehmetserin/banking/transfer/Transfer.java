@@ -44,6 +44,7 @@ public class Transfer {
 
     public Transfer(String idempotencyKey, UUID initiatedBy, UUID fromAccountId, UUID toAccountId,
                      BigDecimal amount, String currency) {
+        this.id = UUID.randomUUID();
         this.idempotencyKey = idempotencyKey;
         this.initiatedBy = initiatedBy;
         this.fromAccountId = fromAccountId;

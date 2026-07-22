@@ -40,6 +40,7 @@ public class LedgerEntry {
     }
 
     public LedgerEntry(UUID transferId, UUID accountId, LedgerEntryType entryType, BigDecimal amount) {
+        this.id = UUID.randomUUID();
         this.transferId = transferId;
         this.accountId = accountId;
         this.entryType = entryType;

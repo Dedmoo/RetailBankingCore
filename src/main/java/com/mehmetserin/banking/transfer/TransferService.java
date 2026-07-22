@@ -62,6 +62,7 @@ public class TransferService {
     }
 
     public TransferResponse transfer(String username, String idempotencyKey, TransferRequest request) {
+        requireIdempotencyKey(idempotencyKey);
         UUID userId = findUserId(username);
 
         Optional<Transfer> alreadyProcessed = transferRepository.findByIdempotencyKeyAndInitiatedBy(idempotencyKey, userId);
@@ -95,6 +96,13 @@ public class TransferService {
 
         Account fromAccount = fromIsFirst ? first : second;
         Account toAccount = fromIsFirst ? second : first;
+
+        // Debit only from an account the caller owns. Credit to another user's
+        // account is allowed (simple P2P). Checked after FOR UPDATE so the
+        // ownership decision cannot race with a concurrent owner change.
+        if (!fromAccount.getOwnerId().equals(userId)) {
+            throw new AccountAccessDeniedException();
+        }
 
         if (!request.currency().equals(fromAccount.getCurrency()) || !fromAccount.getCurrency().equals(toAccount.getCurrency())) {
             throw new InvalidTransferException("Currency mismatch between accounts and transfer request");
@@ -132,5 +140,14 @@ public class TransferService {
         AppUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Authenticated user not found: " + username));
         return user.getId();
+    }
+
+    private static void requireIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new InvalidTransferException("Idempotency-Key must not be blank");
+        }
+        if (idempotencyKey.length() > 100) {
+            throw new InvalidTransferException("Idempotency-Key must be at most 100 characters");
+        }
     }
 }

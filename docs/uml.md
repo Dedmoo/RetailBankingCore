@@ -22,6 +22,7 @@ sequenceDiagram
   else new transfer
     Svc->>Acc: lock both accounts FOR UPDATE (lower id first)
     Acc->>DB: SELECT ... FOR UPDATE
+    Svc->>Svc: assert source owned by caller
     Svc->>Svc: debit source / credit destination
     Svc->>DB: insert transfer + DEBIT + CREDIT ledger rows
     Svc-->>API: 201 TransferResponse

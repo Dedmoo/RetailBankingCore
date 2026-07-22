@@ -33,6 +33,7 @@ public class AppUser {
     }
 
     public AppUser(String username, String email, String passwordHash) {
+        this.id = UUID.randomUUID();
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;

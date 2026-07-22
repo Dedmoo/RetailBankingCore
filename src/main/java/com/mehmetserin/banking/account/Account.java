@@ -54,6 +54,7 @@ public class Account {
         if (openingBalance.compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidTransferException("Opening balance cannot be negative");
         }
+        this.id = UUID.randomUUID();
         this.ownerId = ownerId;
         this.accountNumber = accountNumber;
         this.currency = currency;

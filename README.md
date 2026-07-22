@@ -22,6 +22,7 @@ Built with **Java 17** and **Spring Boot 3.3**. Portfolio MVP, not a bank core. 
 | Account creation with an opening balance, single currency per account | Implemented |
 | Double-entry transfer between two accounts (one `DEBIT` + one `CREDIT` ledger line per transfer) | Implemented |
 | Idempotency key on transfers (`Idempotency-Key` header, required) | Implemented |
+| Debit authorization: source account must belong to the caller | Implemented |
 | Pessimistic row locking (`SELECT ... FOR UPDATE`) so concurrent transfers can't overdraw an account | Implemented |
 | Per-user rate limiting on the transfer endpoint (Bucket4j, in-memory) | Implemented |
 | Postgres schema managed by Flyway migrations (no `ddl-auto`/`EnsureCreated`) | Implemented |
@@ -73,7 +74,9 @@ sequenceDiagram
 ## Domain rules enforced
 
 - An account can only move money while `ACTIVE`, and only for a strictly positive amount.
-- A debit that would take the balance below zero throws `InsufficientFundsException` — enforced
+- The source account must belong to the authenticated user (debit authorization). Credit to
+  another user's account is allowed.
+- A debit that would take the balance below zero throws `InsufficientFundsException`, enforced
   inside the `Account` entity itself (`debit`/`credit`), not just in the service layer.
 - A transfer's source and destination accounts must share the same currency as each other and as
   the request; a transfer to the same account is rejected.
@@ -82,7 +85,7 @@ sequenceDiagram
 - The two accounts involved in a transfer are locked in a fixed order (lower account id first),
   regardless of which one is the source, so two transfers can never deadlock each other.
 - A retried request with the same `Idempotency-Key` (scoped per user) returns the original transfer
-  instead of moving money again.
+  instead of moving money again. Blank keys and keys longer than 100 characters are rejected.
 
 ## API
 
