@@ -7,6 +7,7 @@ import com.mehmetserin.banking.common.exception.InsufficientFundsException;
 import com.mehmetserin.banking.common.exception.InvalidTransferException;
 import com.mehmetserin.banking.transfer.dto.TransferRequest;
 import com.mehmetserin.banking.transfer.dto.TransferResponse;
+import com.mehmetserin.banking.audit.AuditService;
 import com.mehmetserin.banking.user.AppUser;
 import com.mehmetserin.banking.user.AppUserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,8 @@ class TransferServiceTest {
     @Mock
     private AppUserRepository userRepository;
     @Mock
+    private AuditService auditService;
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     private TransferService transferService;
@@ -51,7 +54,7 @@ class TransferServiceTest {
     @BeforeEach
     void setUp() {
         transferService = new TransferService(transferRepository, ledgerEntryRepository, accountRepository,
-                userRepository, transactionManager);
+                userRepository, auditService, transactionManager);
         user = new AppUser("alice", "alice@example.com", "hashed");
         lenient().when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         lenient().when(transferRepository.saveAndFlush(any(Transfer.class)))

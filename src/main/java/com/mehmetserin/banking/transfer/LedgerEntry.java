@@ -18,6 +18,9 @@ public class LedgerEntry {
     @Id
     private UUID id;
 
+    @Column(name = "journal_id", nullable = false)
+    private UUID journalId;
+
     @Column(name = "transfer_id")
     private UUID transferId;
 
@@ -41,17 +44,24 @@ public class LedgerEntry {
     protected LedgerEntry() {
     }
 
-    public static LedgerEntry forTransfer(UUID transferId, UUID accountId, LedgerEntryType entryType, BigDecimal amount) {
-        return new LedgerEntry(transferId, accountId, entryType, LedgerPostingKind.TRANSFER, amount);
+    public static LedgerEntry forTransfer(UUID journalId, UUID transferId, UUID accountId,
+                                          LedgerEntryType entryType, BigDecimal amount) {
+        return new LedgerEntry(journalId, transferId, accountId, entryType, LedgerPostingKind.TRANSFER, amount);
     }
 
-    public static LedgerEntry forOpening(UUID accountId, BigDecimal amount) {
-        return new LedgerEntry(null, accountId, LedgerEntryType.CREDIT, LedgerPostingKind.OPENING, amount);
+    public static LedgerEntry forOpening(UUID journalId, UUID accountId, LedgerEntryType entryType, BigDecimal amount) {
+        return new LedgerEntry(journalId, null, accountId, entryType, LedgerPostingKind.OPENING, amount);
     }
 
-    private LedgerEntry(UUID transferId, UUID accountId, LedgerEntryType entryType,
+    public static LedgerEntry forReversal(UUID journalId, UUID transferId, UUID accountId,
+                                          LedgerEntryType entryType, BigDecimal amount) {
+        return new LedgerEntry(journalId, transferId, accountId, entryType, LedgerPostingKind.REVERSAL, amount);
+    }
+
+    private LedgerEntry(UUID journalId, UUID transferId, UUID accountId, LedgerEntryType entryType,
                         LedgerPostingKind postingKind, BigDecimal amount) {
         this.id = UUID.randomUUID();
+        this.journalId = journalId;
         this.transferId = transferId;
         this.accountId = accountId;
         this.entryType = entryType;
@@ -62,6 +72,10 @@ public class LedgerEntry {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getJournalId() {
+        return journalId;
     }
 
     public UUID getTransferId() {

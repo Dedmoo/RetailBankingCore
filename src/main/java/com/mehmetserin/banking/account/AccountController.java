@@ -2,6 +2,7 @@ package com.mehmetserin.banking.account;
 
 import com.mehmetserin.banking.account.dto.AccountResponse;
 import com.mehmetserin.banking.account.dto.CreateAccountRequest;
+import com.mehmetserin.banking.account.dto.StatementLine;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,12 @@ public class AccountController {
     public ResponseEntity<AccountResponse> getAccount(@AuthenticationPrincipal String username,
                                                         @PathVariable UUID accountId) {
         return ResponseEntity.ok(accountService.getMyAccount(username, accountId));
+    }
+
+    @GetMapping("/{accountId}/statement")
+    public ResponseEntity<List<StatementLine>> statement(@AuthenticationPrincipal String username,
+                                                           @PathVariable UUID accountId) {
+        return ResponseEntity.ok(accountService.statement(username, accountId));
     }
 
     @PostMapping("/{accountId}/freeze")

@@ -16,6 +16,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     boolean existsByAccountNumber(String accountNumber);
 
+    Optional<Account> findByAccountNumber(String accountNumber);
+
     /**
      * Locks the row with SELECT ... FOR UPDATE for the duration of the caller's
      * transaction. Callers must always acquire locks for multiple accounts in a

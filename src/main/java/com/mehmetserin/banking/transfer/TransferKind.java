@@ -1,7 +1,6 @@
 package com.mehmetserin.banking.transfer;
 
-public enum LedgerPostingKind {
+public enum TransferKind {
     TRANSFER,
-    OPENING,
     REVERSAL
 }

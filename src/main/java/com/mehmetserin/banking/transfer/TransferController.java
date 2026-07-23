@@ -33,6 +33,14 @@ public class TransferController {
         return ResponseEntity.status(HttpStatus.CREATED).body(transferService.transfer(username, idempotencyKey, request));
     }
 
+    @PostMapping("/{transferId}/reverse")
+    public ResponseEntity<TransferResponse> reverseTransfer(@AuthenticationPrincipal String username,
+                                                              @PathVariable UUID transferId,
+                                                              @RequestHeader("Idempotency-Key") String idempotencyKey) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(transferService.reverse(username, transferId, idempotencyKey));
+    }
+
     @GetMapping("/{transferId}")
     public ResponseEntity<TransferResponse> getTransfer(@AuthenticationPrincipal String username,
                                                           @PathVariable UUID transferId) {

@@ -2,6 +2,8 @@ package com.mehmetserin.banking.transfer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -34,6 +36,13 @@ public class Transfer {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transfer_kind", nullable = false, length = 20)
+    private TransferKind transferKind;
+
+    @Column(name = "reverses_transfer_id")
+    private UUID reversesTransferId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -41,7 +50,13 @@ public class Transfer {
     }
 
     public Transfer(String idempotencyKey, UUID initiatedBy, UUID fromAccountId, UUID toAccountId,
-                     BigDecimal amount, String currency) {
+                    BigDecimal amount, String currency) {
+        this(idempotencyKey, initiatedBy, fromAccountId, toAccountId, amount, currency,
+                TransferKind.TRANSFER, null);
+    }
+
+    public Transfer(String idempotencyKey, UUID initiatedBy, UUID fromAccountId, UUID toAccountId,
+                    BigDecimal amount, String currency, TransferKind transferKind, UUID reversesTransferId) {
         this.id = UUID.randomUUID();
         this.idempotencyKey = idempotencyKey;
         this.initiatedBy = initiatedBy;
@@ -49,6 +64,8 @@ public class Transfer {
         this.toAccountId = toAccountId;
         this.amount = amount;
         this.currency = currency;
+        this.transferKind = transferKind;
+        this.reversesTransferId = reversesTransferId;
         this.createdAt = Instant.now();
     }
 
@@ -78,6 +95,14 @@ public class Transfer {
 
     public String getCurrency() {
         return currency;
+    }
+
+    public TransferKind getTransferKind() {
+        return transferKind;
+    }
+
+    public UUID getReversesTransferId() {
+        return reversesTransferId;
     }
 
     public Instant getCreatedAt() {

@@ -2,42 +2,46 @@
 
 [![CI](https://github.com/Dedmoo/RetailBankingCore/actions/workflows/ci.yml/badge.svg)](https://github.com/Dedmoo/RetailBankingCore/actions/workflows/ci.yml)
 
-Retail banking monolith: JWT register/login, accounts with freeze/close, money movement as
-double-entry ledger posts (opening CREDIT + transfer DEBIT/CREDIT), Postgres + Flyway.
+Retail banking monolith: JWT auth, customer accounts, house funding account for balanced
+openings, double-entry journals, transfer reversal, statement, append-only ledger + audit,
+Postgres + Flyway, OpenAPI.
 
-Java 17 / Spring Boot 3.3. Portfolio service, not a bank core.
+Java 17 / Spring Boot 3.3. Teaching retail core for portfolio review. Not a licensed bank,
+not PCI, not a payment rail.
 
 ## Documentation
 
 | Doc | Content |
 |-----|---------|
 | [docs/architecture.md](docs/architecture.md) | C4 context/container, component view, packaging |
-| [docs/uml.md](docs/uml.md) | Transfer sequences, class diagram, ER (Flyway V1–V2) |
+| [docs/uml.md](docs/uml.md) | Sequences, class diagram, ER (Flyway V1–V3) |
+| `/swagger-ui.html` | OpenAPI (when app is running) |
 
 ## Scope (honest)
 
 | Capability | Status |
 |------------|--------|
-| Register / login with JWT (Spring Security, stateless) | Implemented |
-| Account creation; positive opening balance posts an `OPENING` ledger CREDIT | Implemented |
-| Freeze / unfreeze / close (close only when balance is zero) | Implemented |
-| Double-entry transfer (`TRANSFER` DEBIT + CREDIT lines, `transfer_id` set) | Implemented |
-| Ledger append-only in Postgres (UPDATE/DELETE blocked by trigger) | Implemented |
-| Reconciliation: account.balance = Σ CREDIT − Σ DEBIT | Implemented (service + IT) |
-| Idempotency key on transfers (`Idempotency-Key` header, required) | Implemented |
-| Debit authorization: source account must belong to the caller | Implemented |
-| Pessimistic row locking (`SELECT ... FOR UPDATE`), lock order by account id | Implemented |
-| Per-user rate limiting on transfers (Bucket4j, in-memory) | Implemented |
-| Response security headers (`no-store`, `nosniff`, `DENY` frame) | Implemented |
-| Flyway schema (no Hibernate `ddl-auto` mutate) | Implemented |
-| Actuator health | Implemented |
-| Testcontainers ITs: transfer, concurrency, lifecycle, ledger recon | Implemented |
-| Multi-currency / FX | Not included |
-| Multi-tenant orgs, roles beyond single user | Not included |
-| Cards, loans, statements, interest | Not included |
-| Refresh tokens, revocation, password reset | Not included |
-| Distributed rate limit (Redis) | Not included |
-| KYC/AML, fraud, full audit event stream | Not included |
+| JWT register / login | Implemented |
+| Customer account open; opening funded via HOUSE debit + customer CREDIT (balanced journal) | Implemented |
+| Account statement (`GET .../statement`) | Implemented |
+| Freeze / unfreeze / close (zero balance) | Implemented |
+| Transfer + compensating reversal (`POST .../reverse`) | Implemented |
+| Append-only ledger + append-only audit_events | Implemented |
+| Per-account and global debit=credit reconciliation | Implemented |
+| Idempotency-Key on transfer and reverse | Implemented |
+| `X-Request-Id` (echo / generate) on every response | Implemented |
+| Pessimistic locks, fixed lock order | Implemented |
+| Bucket4j rate limit on transfers (in-memory) | Implemented |
+| Security response headers | Implemented |
+| Flyway V1–V3, Hibernate validate | Implemented |
+| Springdoc OpenAPI | Implemented |
+| Testcontainers ITs (transfer, concurrency, lifecycle, recon, reversal) | Implemented |
+| FX / multi-currency conversion | Not included |
+| Multi-tenant orgs / roles | Not included |
+| Cards, loans, interest accrual | Not included |
+| Refresh tokens / revocation | Not included |
+| Redis rate limit | Not included |
+| KYC/AML / fraud engines | Not included |
 
 ## Architecture
 
@@ -77,17 +81,13 @@ sequenceDiagram
 
 ## Domain rules enforced
 
-- Money movement only while `ACTIVE` and only for a strictly positive amount. `FROZEN` and
-  `CLOSED` reject debit/credit.
-- Close requires a zero balance; freeze/unfreeze are owner-only HTTP actions.
-- Source account must belong to the caller. Credit to another user's account is allowed (P2P).
-- Insufficient funds throws `InsufficientFundsException` inside `Account.debit`.
-- Transfer accounts must share currency with each other and the request; same-account transfer rejected.
-- Positive opening balance → one `OPENING` CREDIT (external funding, no contra account in this MVP).
-  Each transfer → one `TRANSFER` DEBIT and one `TRANSFER` CREDIT for the same amount.
-- Account balance must equal signed ledger sum; ITs assert this after open and transfer.
-- Accounts locked in fixed id order under `FOR UPDATE` to avoid deadlock and overdraw races.
-- Same `Idempotency-Key` per user replays the original transfer. Blank / over-long keys rejected.
+- Money movement only while `ACTIVE` (customer accounts). `FROZEN` / `CLOSED` reject debit/credit.
+- Opening: HOUSE funding account is DEBITed, customer is CREDITed, same `journal_id` (Σ DEBIT = Σ CREDIT).
+- Transfer / reversal: paired ledger lines; reversal posts compensating entries (ledger never updated).
+- Close requires zero balance. Freeze/unfreeze/close are owner-only.
+- Source account must belong to the caller for transfers.
+- Account balance = Σ CREDIT − Σ DEBIT; global Σ DEBIT amounts = Σ CREDIT amounts.
+- Idempotent transfer and reverse via `Idempotency-Key`.
 
 ## API
 
@@ -98,10 +98,12 @@ sequenceDiagram
 | `POST` | `/api/accounts` | JWT | Open an account (currency + opening balance) |
 | `GET` | `/api/accounts` | JWT | List the caller's accounts |
 | `GET` | `/api/accounts/{id}` | JWT | Get one owned account |
+| `GET` | `/api/accounts/{id}/statement` | JWT | Ledger lines for the account |
 | `POST` | `/api/accounts/{id}/freeze` | JWT | Freeze (blocks transfers) |
 | `POST` | `/api/accounts/{id}/unfreeze` | JWT | Return to ACTIVE |
 | `POST` | `/api/accounts/{id}/close` | JWT | Close when balance is zero |
 | `POST` | `/api/transfers` | JWT + `Idempotency-Key` | Double-entry transfer |
+| `POST` | `/api/transfers/{id}/reverse` | JWT + `Idempotency-Key` | Compensating reversal |
 | `GET` | `/api/transfers/{id}` | JWT | Get a transfer the caller initiated |
 | `GET` | `/actuator/health` | none | Liveness/readiness probe |
 

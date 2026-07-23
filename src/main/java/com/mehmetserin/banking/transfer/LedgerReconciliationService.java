@@ -8,9 +8,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Balance on {@link Account} must equal signed ledger sum: CREDIT minus DEBIT.
- * Opening funds are a single CREDIT ({@link LedgerPostingKind#OPENING}); transfers
- * post paired DEBIT/CREDIT rows ({@link LedgerPostingKind#TRANSFER}).
+ * Per-account: balance = Σ CREDIT − Σ DEBIT.
+ * Ledger-wide: Σ DEBIT amounts = Σ CREDIT amounts (every journal is balanced).
  */
 @Service
 public class LedgerReconciliationService {
@@ -33,5 +32,18 @@ public class LedgerReconciliationService {
                     "Ledger out of balance for account " + account.getAccountNumber()
                             + ": stored=" + account.getBalance() + " ledger=" + fromLedger);
         }
+    }
+
+    public void assertGlobalDebitsEqualCredits() {
+        BigDecimal debits = nullToZero(ledgerEntryRepository.sumAllDebits());
+        BigDecimal credits = nullToZero(ledgerEntryRepository.sumAllCredits());
+        if (debits.compareTo(credits) != 0) {
+            throw new InvalidTransferException(
+                    "Global ledger imbalance: debits=" + debits + " credits=" + credits);
+        }
+    }
+
+    private static BigDecimal nullToZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

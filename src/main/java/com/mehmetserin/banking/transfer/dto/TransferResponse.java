@@ -8,21 +8,23 @@ import java.util.UUID;
 
 public record TransferResponse(
         UUID id,
-        String idempotencyKey,
         UUID fromAccountId,
         UUID toAccountId,
         BigDecimal amount,
         String currency,
+        String transferKind,
+        UUID reversesTransferId,
         Instant createdAt
 ) {
     public static TransferResponse from(Transfer transfer) {
         return new TransferResponse(
                 transfer.getId(),
-                transfer.getIdempotencyKey(),
                 transfer.getFromAccountId(),
                 transfer.getToAccountId(),
                 transfer.getAmount(),
                 transfer.getCurrency(),
+                transfer.getTransferKind().name(),
+                transfer.getReversesTransferId(),
                 transfer.getCreatedAt());
     }
 }

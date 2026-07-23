@@ -71,12 +71,13 @@ flowchart TB
 
 ## Ledger rules
 
-- `OPENING`: one CREDIT, `transfer_id` null (funding into the product; no equity contra account here)
-- `TRANSFER`: paired DEBIT + CREDIT with the same `transfer_id`
-- Table is append-only (Postgres triggers reject UPDATE/DELETE)
-- `accounts.balance` must equal Σ CREDIT − Σ DEBIT (`LedgerReconciliationService`)
+- `OPENING`: HOUSE funding DEBIT + customer CREDIT, shared `journal_id`
+- `TRANSFER` / `REVERSAL`: paired lines with `transfer_id`; reversal never mutates old rows
+- Ledger and audit tables are append-only (Postgres triggers)
+- `accounts.balance` = Σ CREDIT − Σ DEBIT; global Σ DEBIT = Σ CREDIT
 
 ## Runtime packaging
 
 - Local / CI: JVM + Postgres (Compose or Testcontainers)
-- Schema only via Flyway (`V1`, `V2`), Hibernate `ddl-auto=validate`
+- Schema only via Flyway (`V1`–`V3`), Hibernate `ddl-auto=validate`
+- OpenAPI UI: `/swagger-ui.html`

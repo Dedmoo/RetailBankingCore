@@ -57,8 +57,18 @@ class LedgerReconciliationIT extends PostgresIntegrationSupport {
         destinationEntity = accountRepository.findById(destination.id()).orElseThrow();
         ledgerReconciliationService.assertMatches(sourceEntity);
         ledgerReconciliationService.assertMatches(destinationEntity);
+        ledgerReconciliationService.assertGlobalDebitsEqualCredits();
         assertThat(sourceEntity.getBalance()).isEqualByComparingTo("125.00");
         assertThat(destinationEntity.getBalance()).isEqualByComparingTo("75.00");
+
+        long openingCredits = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM ledger_entries WHERE account_id = ? AND posting_kind = 'OPENING' AND entry_type = 'CREDIT'",
+                Long.class, source.id());
+        assertThat(openingCredits).isEqualTo(1L);
+        long openingDebits = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM ledger_entries WHERE posting_kind = 'OPENING' AND entry_type = 'DEBIT'",
+                Long.class);
+        assertThat(openingDebits).isGreaterThanOrEqualTo(1L);
     }
 
     @Test

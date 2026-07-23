@@ -3,6 +3,7 @@ package com.mehmetserin.banking.auth;
 import com.mehmetserin.banking.auth.dto.AuthResponse;
 import com.mehmetserin.banking.auth.dto.LoginRequest;
 import com.mehmetserin.banking.auth.dto.RegisterRequest;
+import com.mehmetserin.banking.account.HouseFundingService;
 import com.mehmetserin.banking.common.exception.InvalidCredentialsException;
 import com.mehmetserin.banking.common.exception.UsernameAlreadyTakenException;
 import com.mehmetserin.banking.security.JwtService;
@@ -27,6 +28,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        if (HouseFundingService.SYSTEM_USERNAME.equalsIgnoreCase(request.username())) {
+            throw new UsernameAlreadyTakenException(request.username());
+        }
         if (userRepository.existsByUsername(request.username())) {
             throw new UsernameAlreadyTakenException(request.username());
         }
